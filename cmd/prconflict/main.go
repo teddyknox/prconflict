@@ -24,7 +24,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,22 +49,54 @@ type lineThread struct {
 }
 
 func main() {
-	repoFlag := flag.String("repo", "", "GitHub repo in owner/name format (required)")
-	prNum := flag.Int("pr", 0, "Pull request number (required)")
+	repoFlag := flag.String("repo", "", "GitHub repo in owner/name format (optional, autodetected)")
+	prNum := flag.Int("pr", 0, "Pull request number (optional, autodetected)")
 	dryRun := flag.Bool("dry-run", false, "Print changes instead of writing files")
 	flag.Parse()
 
-	if *repoFlag == "" || *prNum == 0 {
-		log.Fatal("--repo and --pr are required")
+	// Determine repository (owner/repo)
+	repoVal := *repoFlag
+	if repoVal == "" {
+		repoVal = os.Getenv("GITHUB_REPOSITORY")
+		if repoVal == "" {
+			out, err := exec.Command("gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner").Output()
+			if err != nil {
+				log.Fatalf("could not detect repository: %v", err)
+			}
+			repoVal = strings.TrimSpace(string(out))
+		}
 	}
+
+	// Determine PR number
+	prNumVal := *prNum
+	if prNumVal == 0 {
+		if prEnv := os.Getenv("GITHUB_PR_NUMBER"); prEnv != "" {
+			num, err := strconv.Atoi(prEnv)
+			if err != nil {
+				log.Fatalf("invalid GITHUB_PR_NUMBER: %v", err)
+			}
+			prNumVal = num
+		} else {
+			out, err := exec.Command("gh", "pr", "view", "--json", "number", "--jq", ".number").Output()
+			if err != nil {
+				log.Fatalf("could not detect PR number: %v", err)
+			}
+			num, err := strconv.Atoi(strings.TrimSpace(string(out)))
+			if err != nil {
+				log.Fatalf("invalid PR number from gh CLI: %v", err)
+			}
+			prNumVal = num
+		}
+	}
+
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		log.Fatal("GITHUB_TOKEN env var missing – provide a PAT with repo scope")
 	}
 
-	owner, repo, ok := splitRepo(*repoFlag)
+	owner, repo, ok := splitRepo(repoVal)
 	if !ok {
-		log.Fatalf("invalid --repo format: %s", *repoFlag)
+		log.Fatalf("invalid repository format: %s", repoVal)
 	}
 
 	// OAuth‑backed HTTP client for both REST and GraphQL
@@ -74,14 +108,14 @@ func main() {
 	ghQL := githubv4.NewClient(httpClient)
 
 	// 1. Get IDs of comments in unresolved threads via GraphQL
-	unresolvedIDs := getUnresolvedCommentIDs(ctx, ghQL, owner, repo, *prNum)
+	unresolvedIDs := getUnresolvedCommentIDs(ctx, ghQL, owner, repo, prNumVal)
 	if len(unresolvedIDs) == 0 {
 		log.Println("All review threads resolved – nothing to do.")
 		return
 	}
 
 	// 2. Fetch *all* review comments via REST (cheap) and keep only unresolved ones
-	comments := fetchReviewComments(ctx, ghREST, owner, repo, *prNum)
+	comments := fetchReviewComments(ctx, ghREST, owner, repo, prNumVal)
 
 	fileThreads := map[string]map[int]*lineThread{}
 	for _, c := range comments {
