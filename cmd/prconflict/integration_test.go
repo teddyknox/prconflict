@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v72/github"
@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	testOwner string
-	testRepo  string
-	testPR    int
+	testOwner string = "teddyknox"
+	testRepo  string = "prconflict"
+	testPR    int    = "kkkkkkkkkk"
 )
 
 func init() {
@@ -30,8 +30,6 @@ func init() {
 		}
 	}
 }
-
-
 
 func setupClients(t *testing.T) (ctx context.Context, ghREST *github.Client, ghQL *githubv4.Client, owner, repo string, prNumber int) {
 	t.Helper()
