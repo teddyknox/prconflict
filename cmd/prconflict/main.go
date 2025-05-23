@@ -28,6 +28,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"encoding/json"
 	"time"
 
 	"github.com/google/go-github/v72/github"
@@ -51,31 +52,36 @@ type lineThread struct {
 func main() {
 	repoFlag := flag.String("repo", "", "GitHub repo in owner/name format (optional, autodetected)")
 	prNum := flag.Int("pr", 0, "Pull request number (optional, autodetected)")
+	branchFlag := flag.String("branch", "", "Git branch name for PR detection (optional)")
 	dryRun := flag.Bool("dry-run", false, "Print changes instead of writing files")
 	flag.Parse()
 
 	// Determine repository (owner/repo)
 	repoVal := *repoFlag
 	if repoVal == "" {
-		repoVal = os.Getenv("GITHUB_REPOSITORY")
-		if repoVal == "" {
-			out, err := exec.Command("gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner").Output()
-			if err != nil {
-				log.Fatalf("could not detect repository: %v", err)
-			}
-			repoVal = strings.TrimSpace(string(out))
+		out, err := exec.Command("gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner").Output()
+		if err != nil {
+			log.Fatalf("could not detect repository: %v", err)
 		}
+		repoVal = strings.TrimSpace(string(out))
 	}
 
 	// Determine PR number
 	prNumVal := *prNum
 	if prNumVal == 0 {
-		if prEnv := os.Getenv("GITHUB_PR_NUMBER"); prEnv != "" {
-			num, err := strconv.Atoi(prEnv)
+		if *branchFlag != "" {
+			out, err := exec.Command("gh", "pr", "list", "--json", "number", "--head", *branchFlag).Output()
 			if err != nil {
-				log.Fatalf("invalid GITHUB_PR_NUMBER: %v", err)
+				log.Fatalf("could not detect PR number from branch %s: %v", *branchFlag, err)
 			}
-			prNumVal = num
+			var prs []struct{ Number int }
+			if err := json.Unmarshal(out, &prs); err != nil {
+				log.Fatalf("invalid JSON from gh pr list: %v", err)
+			}
+			if len(prs) == 0 {
+				log.Fatalf("no PR found for branch %s", *branchFlag)
+			}
+			prNumVal = prs[0].Number
 		} else {
 			out, err := exec.Command("gh", "pr", "view", "--json", "number", "--jq", ".number").Output()
 			if err != nil {
