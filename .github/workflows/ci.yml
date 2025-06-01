@@ -96,6 +96,11 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
+    - name: Configure Git
+      run: |
+        git config --global user.email "ci@github.com"
+        git config --global user.name "GitHub CI"
+
     - name: Install GitHub CLI
       run: |
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -126,6 +131,11 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "ci@github.com"
+        git config --global user.name "GitHub CI"
 
     - name: Install GitHub CLI
       run: |
