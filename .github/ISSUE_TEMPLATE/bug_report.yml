@@ -1,0 +1,131 @@
+name: 🐛 Bug Report
+description: Report a bug in prconflict
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what went wrong...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the issue.
+      placeholder: |
+        1. Run `prconflict --repo owner/repo --pr 123`
+        2. See error message...
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: prconflict Version
+      description: What version of prconflict are you using?
+      placeholder: "v0.4.0 or commit hash"
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      description: What version of Go are you using?
+      placeholder: "go version go1.21.0 darwin/amd64"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and Arguments
+      description: What exact command did you run?
+      placeholder: "prconflict --repo owner/repo --pr 123 --dry-run"
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output
+      description: Please paste any error messages or unexpected output.
+      render: shell
+      placeholder: Paste the complete error output here...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Any additional environment details that might be relevant.
+      placeholder: |
+        - GitHub Enterprise vs GitHub.com
+        - Special network configuration
+        - Proxy settings
+        - etc.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here.
+      placeholder: Screenshots, logs, related issues, etc.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checks
+      description: Please confirm the following before submitting this bug report.
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported before
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+        - label: I am using a supported version of prconflict
+          required: true
+        - label: I have a valid GITHUB_TOKEN with appropriate permissions
+          required: true 

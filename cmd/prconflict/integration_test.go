@@ -1,9 +1,21 @@
+//go:build integration
+// +build integration
+
+// Integration tests validate GitHub API integration without full E2E workflow.
+// These are faster than E2E tests and useful for API contract validation.
+// Run with: go test -tags=integration
+//
+// Purpose vs E2E tests:
+// - Integration: Test individual functions, API contracts, faster feedback
+// - E2E: Test complete workflow, CLI interface, file operations, user scenarios
+//
+// prconflict v0.4 – GraphQL‑powered: insert only unresolved PR threads as conflict markers
 package main
 
 import (
 	"context"
-	"os"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/google/go-github/v72/github"
@@ -73,7 +85,11 @@ func TestIntegration_FetchReviewComments(t *testing.T) {
 		fmt.Printf("Comment ID: %d, Path: %s, Line: %d\n", c.GetID(), c.GetPath(), c.GetLine())
 	}
 	// Validate expected comments
-	expected := []struct{ID int64; Path string; Line int}{
+	expected := []struct {
+		ID   int64
+		Path string
+		Line int
+	}{
 		{2104860587, "cmd/prconflict/integration_test.go", 17},
 		{2104861133, "cmd/prconflict/integration_test.go", 34},
 		{2104861653, "cmd/prconflict/integration_test.go", 17},
