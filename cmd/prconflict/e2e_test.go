@@ -82,8 +82,8 @@ func NewE2ETestFramework(t *testing.T) *E2ETestFramework {
 func (f *E2ETestFramework) Setup(t *testing.T) error {
 	t.Helper()
 
-	// Create unique repo name
-	timestamp := time.Now().Unix()
+	// Create unique repo name with more uniqueness for CI
+	timestamp := time.Now().UnixNano() // Use nanoseconds for better uniqueness
 	f.repoName = fmt.Sprintf("prconflict-e2e-test-%d", timestamp)
 
 	// Create temporary working directory
@@ -164,13 +164,36 @@ func (f *E2ETestFramework) RunScenario(t *testing.T, scenario TestScenario) erro
 }
 
 func (f *E2ETestFramework) cloneRepo() error {
-	repoURL := fmt.Sprintf("https://github.com/%s/%s.git", f.owner, f.repoName)
+	// Use token-authenticated URL for cloning
+	repoURL := fmt.Sprintf("https://%s@github.com/%s/%s.git", f.token, f.owner, f.repoName)
 	cmd := exec.Command("git", "clone", repoURL, f.workDir)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
+
+	// Configure git environment for authentication
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
+	env = append(env, fmt.Sprintf("GIT_ASKPASS=/bin/echo"))
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git clone failed: %w, output: %s", err, output)
+	}
+
+	// Configure git remote URL with token for subsequent operations
+	if err := f.configureGitCredentials(); err != nil {
+		return fmt.Errorf("failed to configure git credentials: %w", err)
+	}
+
+	return nil
+}
+
+func (f *E2ETestFramework) configureGitCredentials() error {
+	// Set remote URL with token authentication
+	remoteURL := fmt.Sprintf("https://%s@github.com/%s/%s.git", f.token, f.owner, f.repoName)
+	cmd := exec.Command("git", "remote", "set-url", "origin", remoteURL)
+	cmd.Dir = f.workDir
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to set remote URL: %w, output: %s", err, output)
 	}
 	return nil
 }
@@ -433,7 +456,15 @@ func (f *E2ETestFramework) verifyResults(expectedMarkers []ExpectedMarker) error
 func (f *E2ETestFramework) gitRun(args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = f.workDir
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
+
+	// Configure git environment for CI authentication
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
+	// Configure git to use token-based authentication for HTTPS
+	env = append(env, fmt.Sprintf("GIT_ASKPASS=/bin/echo"))
+	env = append(env, fmt.Sprintf("GIT_USERNAME=%s", f.token))
+	env = append(env, fmt.Sprintf("GIT_PASSWORD=%s", f.token))
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
