@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -89,7 +88,7 @@ func (f *E2ETestFramework) Setup(t *testing.T) error {
 
 	// Create temporary working directory
 	var err error
-	f.workDir, err = ioutil.TempDir("", "prconflict-e2e-*")
+	f.workDir, err = os.MkdirTemp("", "prconflict-e2e-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
@@ -97,10 +96,10 @@ func (f *E2ETestFramework) Setup(t *testing.T) error {
 
 	// Create GitHub repository
 	repo := &github.Repository{
-		Name:        github.String(f.repoName),
-		Description: github.String("Temporary repo for prconflict e2e testing"),
-		Private:     github.Bool(false),
-		AutoInit:    github.Bool(true),
+		Name:        github.Ptr(f.repoName),
+		Description: github.Ptr("Temporary repo for prconflict e2e testing"),
+		Private:     github.Ptr(false),
+		AutoInit:    github.Ptr(true),
 	}
 
 	f.testRepo, _, err = f.ghREST.Repositories.Create(f.ctx, "", repo)
@@ -183,15 +182,15 @@ func (f *E2ETestFramework) setupInitialFiles(files map[string]string) error {
 	goSumPath := filepath.Join(mainProjectDir, "go.sum")
 
 	// Copy go.mod
-	if goModContent, err := ioutil.ReadFile(goModPath); err == nil {
-		if err := ioutil.WriteFile(filepath.Join(f.workDir, "go.mod"), goModContent, 0644); err != nil {
+	if goModContent, err := os.ReadFile(goModPath); err == nil {
+		if err := os.WriteFile(filepath.Join(f.workDir, "go.mod"), goModContent, 0644); err != nil {
 			return fmt.Errorf("failed to copy go.mod: %w", err)
 		}
 	}
 
 	// Copy go.sum if it exists
-	if goSumContent, err := ioutil.ReadFile(goSumPath); err == nil {
-		if err := ioutil.WriteFile(filepath.Join(f.workDir, "go.sum"), goSumContent, 0644); err != nil {
+	if goSumContent, err := os.ReadFile(goSumPath); err == nil {
+		if err := os.WriteFile(filepath.Join(f.workDir, "go.sum"), goSumContent, 0644); err != nil {
 			return fmt.Errorf("failed to copy go.sum: %w", err)
 		}
 	}
@@ -204,8 +203,8 @@ func (f *E2ETestFramework) setupInitialFiles(files map[string]string) error {
 
 	// Copy main.go from the current directory
 	mainGoPath := "main.go"
-	if mainGoContent, err := ioutil.ReadFile(mainGoPath); err == nil {
-		if err := ioutil.WriteFile(filepath.Join(cmdDir, "main.go"), mainGoContent, 0644); err != nil {
+	if mainGoContent, err := os.ReadFile(mainGoPath); err == nil {
+		if err := os.WriteFile(filepath.Join(cmdDir, "main.go"), mainGoContent, 0644); err != nil {
 			return fmt.Errorf("failed to copy main.go: %w", err)
 		}
 	}
@@ -218,7 +217,7 @@ func (f *E2ETestFramework) setupInitialFiles(files map[string]string) error {
 			return fmt.Errorf("failed to create directory for %s: %w", filename, err)
 		}
 
-		if err := ioutil.WriteFile(fullPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", filename, err)
 		}
 	}
@@ -245,7 +244,7 @@ func (f *E2ETestFramework) createFeatureBranch(branchName string, changes map[st
 	// Apply changes
 	for filename, content := range changes {
 		fullPath := filepath.Join(f.workDir, filename)
-		if err := ioutil.WriteFile(fullPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", filename, err)
 		}
 	}
@@ -265,10 +264,10 @@ func (f *E2ETestFramework) createFeatureBranch(branchName string, changes map[st
 
 func (f *E2ETestFramework) createPR(branch, title, body string) (*github.PullRequest, error) {
 	pr := &github.NewPullRequest{
-		Title: github.String(title),
-		Body:  github.String(body),
-		Head:  github.String(branch),
-		Base:  github.String("main"),
+		Title: github.Ptr(title),
+		Body:  github.Ptr(body),
+		Head:  github.Ptr(branch),
+		Base:  github.Ptr("main"),
 	}
 
 	createdPR, _, err := f.ghREST.PullRequests.Create(f.ctx, f.owner, f.repoName, pr)
@@ -294,11 +293,11 @@ func (f *E2ETestFramework) addReviewComments(prNumber int, comments []ReviewComm
 			// For now, skip reply comments since they have API complexity
 			// Just create a regular comment instead
 			reviewComment := &github.PullRequestComment{
-				Body:     github.String(comment.Body),
-				Path:     github.String(comment.Path),
-				CommitID: github.String(commitSHA),
-				Line:     github.Int(comment.Line),
-				Side:     github.String("RIGHT"),
+				Body:     github.Ptr(comment.Body),
+				Path:     github.Ptr(comment.Path),
+				CommitID: github.Ptr(commitSHA),
+				Line:     github.Ptr(comment.Line),
+				Side:     github.Ptr("RIGHT"),
 			}
 
 			created, _, err := f.ghREST.PullRequests.CreateComment(f.ctx, f.owner, f.repoName, prNumber, reviewComment)
@@ -309,11 +308,11 @@ func (f *E2ETestFramework) addReviewComments(prNumber int, comments []ReviewComm
 		} else {
 			// This is a new review comment - need to specify side and use line instead of Line
 			reviewComment := &github.PullRequestComment{
-				Body:     github.String(comment.Body),
-				Path:     github.String(comment.Path),
-				CommitID: github.String(commitSHA),
-				Line:     github.Int(comment.Line),
-				Side:     github.String("RIGHT"), // Comments on the new version of the file
+				Body:     github.Ptr(comment.Body),
+				Path:     github.Ptr(comment.Path),
+				CommitID: github.Ptr(commitSHA),
+				Line:     github.Ptr(comment.Line),
+				Side:     github.Ptr("RIGHT"), // Comments on the new version of the file
 			}
 
 			created, _, err := f.ghREST.PullRequests.CreateComment(f.ctx, f.owner, f.repoName, prNumber, reviewComment)
@@ -374,7 +373,7 @@ func (f *E2ETestFramework) runPRConflict(prNumber int) error {
 func (f *E2ETestFramework) verifyResults(expectedMarkers []ExpectedMarker) error {
 	for _, marker := range expectedMarkers {
 		filePath := filepath.Join(f.workDir, marker.File)
-		content, err := ioutil.ReadFile(filePath)
+		content, err := os.ReadFile(filePath)
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %w", marker.File, err)
 		}
