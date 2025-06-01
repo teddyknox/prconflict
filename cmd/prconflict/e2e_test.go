@@ -171,7 +171,7 @@ func (f *E2ETestFramework) cloneRepo() error {
 	// Configure git environment for authentication
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
-	env = append(env, fmt.Sprintf("GIT_ASKPASS=/bin/echo"))
+	env = append(env, "GIT_ASKPASS=/bin/echo")
 	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
@@ -461,7 +461,7 @@ func (f *E2ETestFramework) gitRun(args ...string) error {
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("GITHUB_TOKEN=%s", f.token))
 	// Configure git to use token-based authentication for HTTPS
-	env = append(env, fmt.Sprintf("GIT_ASKPASS=/bin/echo"))
+	env = append(env, "GIT_ASKPASS=/bin/echo")
 	env = append(env, fmt.Sprintf("GIT_USERNAME=%s", f.token))
 	env = append(env, fmt.Sprintf("GIT_PASSWORD=%s", f.token))
 	cmd.Env = env
