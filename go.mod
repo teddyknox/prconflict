@@ -2,8 +2,6 @@ module github.com/teddyknox/prconflict
 
 go 1.23.0
 
-toolchain go1.23.9
-
 require (
 	github.com/google/go-github/v72 v72.0.0
 	github.com/shurcooL/githubv4 v0.0.0-20240727222349-48295856cce7

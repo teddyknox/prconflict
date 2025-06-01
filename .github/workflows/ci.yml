@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.23'
 
 jobs:
   test:
@@ -45,7 +45,7 @@ jobs:
     - name: Run staticcheck
       uses: dominikh/staticcheck-action@v1.3.0
       with:
-        version: "2023.1.6"
+        version: "2024.1.1"
         install-go: false
 
     - name: Run unit tests
