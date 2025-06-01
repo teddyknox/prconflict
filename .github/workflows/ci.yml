@@ -62,14 +62,6 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: test
-    
-    strategy:
-      matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
 
     steps:
     - name: Checkout code
@@ -81,21 +73,13 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
 
     - name: Build binary
-      env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-      run: |
-        output_name="prconflict-${{ matrix.goos }}-${{ matrix.goarch }}"
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          output_name="${output_name}.exe"
-        fi
-        go build -o "${output_name}" ./cmd/prconflict
-        
+      run: go build -o prconflict ./cmd/prconflict
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: prconflict-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: prconflict-*
+        name: prconflict
+        path: prconflict
 
   integration-test:
     name: Integration Tests
@@ -180,14 +164,15 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
-    - name: Download all artifacts
+    - name: Download build artifacts
       uses: actions/download-artifact@v3
+      with:
+        name: prconflict
 
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          prconflict-*/prconflict-*
+        files: prconflict
         draft: false
         prerelease: false
       env:
