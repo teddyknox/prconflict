@@ -20,6 +20,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -28,7 +29,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"encoding/json"
 	"time"
 
 	"github.com/google/go-github/v72/github"
@@ -289,8 +289,11 @@ func buildBlock(cs []commentInfo) []string {
 
 // helper utilities
 func splitRepo(s string) (string, string, bool) {
-	p := strings.Split(s, "/")
-	return p[0], p[1], len(p) == 2 && p[0] != "" && p[1] != ""
+	parts := strings.Split(s, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
 }
 
 func sanitize(s string) string {
